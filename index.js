@@ -26,8 +26,7 @@ async function run() {
   try {
     const db = client.db("assignment-12");
     const usersCollection = db.collection("users");
-    const assetCollection=db.collection("assets");
-
+    const assetCollection = db.collection("assets");
 
     const verifyToken = (req, res, next) => {
       const authHeader = req.headers.authorization;
@@ -89,22 +88,22 @@ async function run() {
       res.send(result);
     });
 
-
-
-    app.post("/assets",async(req,res)=>{
-      const {asset}=req.body;
-      const result=await assetCollection.insertOne(asset);
+    app.post("/assets", async (req, res) => {
+      const { asset } = req.body;
+      const result = await assetCollection.insertOne(asset);
       res.send(result);
-    })
+    });
 
-    app.get("/assets",async(req,res)=>{
-      const result=await assetCollection.find().toArray();
+    app.get("/assets", async (req, res) => {
+      const result = await assetCollection.find().toArray();
       res.send(result);
-    })
+    });
 
-
-
-
+    app.get("/asset-list/:email", async (req, res) => {
+      const query = { HrEmail: req.params.email };
+      const result = await assetCollection.find(query).toArray();
+      res.send(result);
+    });
   } catch (err) {
     console.error("Error connecting to MongoDB:", err.message);
   }
