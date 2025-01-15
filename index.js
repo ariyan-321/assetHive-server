@@ -26,6 +26,8 @@ async function run() {
   try {
     const db = client.db("assignment-12");
     const usersCollection = db.collection("users");
+    const assetCollection=db.collection("assets");
+
 
     const verifyToken = (req, res, next) => {
       const authHeader = req.headers.authorization;
@@ -56,7 +58,7 @@ async function run() {
       try {
         const user = req.body;
         const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-          expiresIn: "1h",
+          expiresIn: "24h",
         });
         res.json({ token });
       } catch (err) {
@@ -86,6 +88,23 @@ async function run() {
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
+
+
+
+    app.post("/assets",async(req,res)=>{
+      const {asset}=req.body;
+      const result=await assetCollection.insertOne(asset);
+      res.send(result);
+    })
+
+    app.get("/assets",async(req,res)=>{
+      const result=await assetCollection.find().toArray();
+      res.send(result);
+    })
+
+
+
+
   } catch (err) {
     console.error("Error connecting to MongoDB:", err.message);
   }
