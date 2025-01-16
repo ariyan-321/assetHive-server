@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 
@@ -27,8 +27,7 @@ async function run() {
     const db = client.db("assignment-12");
     const usersCollection = db.collection("users");
     const assetCollection = db.collection("assets");
-    const employeeCollection=db.collection("employees");
-
+    const employeeCollection = db.collection("employees");
 
     const verifyToken = (req, res, next) => {
       const authHeader = req.headers.authorization;
@@ -70,7 +69,7 @@ async function run() {
     });
 
     app.post("/users", async (req, res) => {
-      const {hrInfo} = req.body;
+      const { hrInfo } = req.body;
       console.log("Received data:", hrInfo);
       const query = { email: hrInfo?.email };
       const existingUser = await usersCollection.findOne(query);
@@ -84,12 +83,40 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/update-employee/:id", async (req, res) => {
+      const id = req.params.id;
+      const { company, companyImage, companyEmail } = req.body;
+
+      try {
+        // Update the user's fields in the users collection
+        const updatedUser = await usersCollection.updateOne(
+          { _id: new ObjectId(id) }, // Match the user by their ID
+          {
+            $set: {
+              company, // Add or update company name
+              companyImage, // Add or update company image
+              companyEmail, // Add or update company email
+            },
+          }
+        );
+
+        if (updatedUser.modifiedCount === 1) {
+          res.status(200).json({ message: "User updated successfully" });
+        } else {
+          res.status(400).json({ message: "User update failed" });
+        }
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .json({ message: "An error occurred while updating user data" });
+      }
+    });
+
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
-
-
 
     app.get("/users/:email", async (req, res) => {
       const query = { email: req.params.email };
@@ -97,16 +124,17 @@ async function run() {
       res.send(result);
     });
 
-
-
-  
-    app.post("/add-emplpyee",async(req,res)=>{
-      const {employee}=req.body;
-      const result=await employeeCollection.insertOne(employee);
+    app.post("/add-employee", async (req, res) => {
+      const employee = req.body;
+      const result = await employeeCollection.insertMany(employee);
       res.send(result);
-    })
+    });
 
-
+    app.get("/employees/:email", async (req, res) => {
+      const query={companyEmail:req.params.email}
+      const result = await employeeCollection.find(query).toArray();
+      res.send(result);
+    });
 
     app.post("/assets", async (req, res) => {
       const { asset } = req.body;
@@ -114,8 +142,9 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/assets", async (req, res) => {
-      const result = await assetCollection.find().toArray();
+    app.get("/assets/:email", async (req, res) => {
+      const query={companyEmail:req.params.email};
+      const result = await assetCollection.find(query).toArray();
       res.send(result);
     });
 
