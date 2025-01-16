@@ -27,6 +27,8 @@ async function run() {
     const db = client.db("assignment-12");
     const usersCollection = db.collection("users");
     const assetCollection = db.collection("assets");
+    const employeeCollection=db.collection("employees");
+
 
     const verifyToken = (req, res, next) => {
       const authHeader = req.headers.authorization;
@@ -68,7 +70,7 @@ async function run() {
     });
 
     app.post("/users", async (req, res) => {
-      const { hrInfo } = req.body;
+      const {hrInfo} = req.body;
       console.log("Received data:", hrInfo);
       const query = { email: hrInfo?.email };
       const existingUser = await usersCollection.findOne(query);
@@ -82,11 +84,29 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+
+
     app.get("/users/:email", async (req, res) => {
       const query = { email: req.params.email };
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
+
+
+
+  
+    app.post("/add-emplpyee",async(req,res)=>{
+      const {employee}=req.body;
+      const result=await employeeCollection.insertOne(employee);
+      res.send(result);
+    })
+
+
 
     app.post("/assets", async (req, res) => {
       const { asset } = req.body;
