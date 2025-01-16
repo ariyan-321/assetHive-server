@@ -143,7 +143,7 @@ async function run() {
     });
 
     app.get("/assets/:email", async (req, res) => {
-      const query={companyEmail:req.params.email};
+      const query={HrEmail:req.params.email};
       const result = await assetCollection.find(query).toArray();
       res.send(result);
     });
@@ -153,6 +153,16 @@ async function run() {
       const result = await assetCollection.find(query).toArray();
       res.send(result);
     });
+
+    app.get("/employees/list/:email",async(req,res)=>{
+      const query={companyEmail:req.params.email};
+      const result=await employeeCollection.find(query).toArray();
+      res.send(result)
+    })
+
+
+
+
   } catch (err) {
     console.error("Error connecting to MongoDB:", err.message);
   }
