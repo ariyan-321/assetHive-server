@@ -263,6 +263,10 @@ async function run() {
       res.send(result);
     });
 
+
+   
+
+
     app.get("/assets/:email", async (req, res) => {
       const query = { HrEmail: req.params.email };
       const result = await assetCollection.find(query).toArray();
