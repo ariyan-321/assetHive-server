@@ -124,7 +124,7 @@ async function run() {
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
-
+   
     app.post("/add-employee", async (req, res) => {
       const employee = req.body;
       const result = await employeeCollection.insertMany(employee);
@@ -140,6 +140,13 @@ async function run() {
     app.post("/assets", async (req, res) => {
       const { asset } = req.body;
       const result = await assetCollection.insertOne(asset);
+      res.send(result);
+    });
+
+    app.get("/team/:email", async (req, res) => {
+      const email=req.params.email;
+      const query={companyEmail:email};
+      const result=await employeeCollection.find(query).toArray();
       res.send(result);
     });
 
