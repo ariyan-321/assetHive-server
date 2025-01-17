@@ -28,6 +28,7 @@ async function run() {
     const usersCollection = db.collection("users");
     const assetCollection = db.collection("assets");
     const employeeCollection = db.collection("employees");
+    const requestsCollection = db.collection("requests");
 
     const verifyToken = (req, res, next) => {
       const authHeader = req.headers.authorization;
@@ -131,7 +132,7 @@ async function run() {
     });
 
     app.get("/employees/:email", async (req, res) => {
-      const query={companyEmail:req.params.email}
+      const query = { companyEmail: req.params.email };
       const result = await employeeCollection.find(query).toArray();
       res.send(result);
     });
@@ -142,8 +143,61 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/assets/request", async (req, res) => {
+      const requestInfo = req.body;
+
+      try {
+        const result = await requestsCollection.insertOne(requestInfo);
+        res.send({
+          success: true,
+          message: "Request added successfully",
+          data: result,
+        });
+      } catch (error) {
+        console.error("Error adding request:", error);
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to add request", error });
+      }
+    });
+
+    app.patch("/assets-update/:id", async (req, res) => {
+      const assetId = req.params.id;
+
+      try {
+        // Find the asset and update its requests and quantity
+        const result = await assetCollection.updateOne(
+          { _id: new ObjectId(assetId) }, // Filter by asset ID
+          {
+            $inc: {
+              requests: 1, // Increment requests by 1
+              quantity: -1, // Decrement quantity by 1
+            },
+          }
+        );
+
+        if (result.modifiedCount > 0) {
+          res.send({ success: true, message: "Asset updated successfully" });
+        } else {
+          res.status(404).send({ success: false, message: "Asset not found" });
+        }
+      } catch (error) {
+        console.error("Error updating asset:", error);
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to update asset", error });
+      }
+    });
+
+    app.get("/employee/requests/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await requestsCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.get("/assets/:email", async (req, res) => {
-      const query={HrEmail:req.params.email};
+      const query = { HrEmail: req.params.email };
       const result = await assetCollection.find(query).toArray();
       res.send(result);
     });
@@ -154,15 +208,11 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/employees/list/:email",async(req,res)=>{
-      const query={companyEmail:req.params.email};
-      const result=await employeeCollection.find(query).toArray();
-      res.send(result)
-    })
-
-
-
-
+    app.get("/employees/list/:email", async (req, res) => {
+      const query = { companyEmail: req.params.email };
+      const result = await employeeCollection.find(query).toArray();
+      res.send(result);
+    });
   } catch (err) {
     console.error("Error connecting to MongoDB:", err.message);
   }
