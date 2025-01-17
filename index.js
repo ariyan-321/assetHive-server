@@ -119,6 +119,19 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/requests", async (req, res) => {
+      const result = await req.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/requests/all/:email", async (req, res) => {
+      const email=req.params.email;
+      const query={"asset.HrEmail":email}
+      const result = await requestsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+
     app.get("/users/:email", async (req, res) => {
       const query = { email: req.params.email };
       const result = await usersCollection.findOne(query);
