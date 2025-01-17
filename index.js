@@ -132,6 +132,9 @@ async function run() {
     });
 
 
+
+
+
     app.get("/users/:email", async (req, res) => {
       const query = { email: req.params.email };
       const result = await usersCollection.findOne(query);
@@ -212,6 +215,43 @@ async function run() {
     app.get("/employee/requests/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
+      const result = await requestsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/employee/monthly/requests/:email", async (req, res) => {
+      const email = req.params.email;
+    
+      // Get the start and end of the current month
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+    
+      // Build the query
+      const query = {
+        email: email,
+        requestDate: {
+          $gte: startOfMonth.getTime(), // Greater than or equal to the start of the month
+          $lte: endOfMonth.getTime(),  // Less than or equal to the end of the month
+        },
+      };
+    
+      try {
+        const result = await requestsCollection
+          .find(query)
+          .limit(4) // Limit the response to a maximum of 4 documents
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching monthly requests:", error);
+        res.status(500).send({ error: "Failed to fetch monthly requests" });
+      }
+    });
+    
+    
+
+    app.get("/employee/requests/pending/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email ,status:"pending"};
       const result = await requestsCollection.find(query).toArray();
       res.send(result);
     });
