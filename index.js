@@ -131,6 +131,13 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/requests/pending/:email", async (req, res) => {
+      const email=req.params.email;
+      const query={"asset.HrEmail":email,status:"pending"}
+      const result = await requestsCollection.find(query).toArray();
+      res.send(result);
+    });
+
 
 
 
@@ -264,6 +271,18 @@ async function run() {
 
     app.get("/asset-list/:email", async (req, res) => {
       const query = { HrEmail: req.params.email };
+      const result = await assetCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/asset/most/:email", async (req, res) => {
+      const query = { HrEmail: req.params.email ,"requests": { $gt: 2 }};
+      const result = await assetCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/asset/limited/:email", async (req, res) => {
+      const query = { HrEmail: req.params.email ,"quantity": { $lt: 10 }};
       const result = await assetCollection.find(query).toArray();
       res.send(result);
     });
