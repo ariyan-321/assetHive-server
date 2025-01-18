@@ -125,18 +125,87 @@ async function run() {
     });
 
     app.get("/requests/all/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { "asset.HrEmail": email };
-      const result = await requestsCollection.find(query).limit(5).toArray();
-      res.send(result);
+      try {
+        const email = req.params.email;
+        const search = req.query.search || ''; // Get the search term from query parameters
+    
+        // Query to match the HR email and optionally filter by requester email or name
+        const query = {
+          "asset.HrEmail": email,
+          $or: [
+            { email: { $regex: search, $options: "i" } }, // Match requester email
+            { "asset.name": { $regex: search, $options: "i" } }, // Match asset name
+          ],
+        };
+    
+        const result = await requestsCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching requests:", error);
+        res.status(500).send({ error: "Failed to fetch requests" });
+      }
     });
+    
 
-    app.get("/requests/pending/:email", async (req, res) => {
+    app.get("/requests-pending/:email", async (req, res) => {
       const email = req.params.email;
       const query = { "asset.HrEmail": email, status: "pending" };
       const result = await requestsCollection.find(query).limit(5).toArray();
       res.send(result);
     });
+
+    
+    
+
+    app.patch("/requests/reject/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+    
+      try {
+        // Update both the request status to "rejected" and increment the quantity of the asset inside the request document
+        const updateRequestDoc = {
+          $set: {
+            status: "rejected",
+          },
+          $inc: {
+            "asset.quantity": 1,  // Increment quantity inside the asset field of the request document
+          },
+        };
+        
+        const requestResult = await requestsCollection.updateOne(query, updateRequestDoc);
+    
+        if (requestResult.modifiedCount === 1) {
+          // Get the asset ID from the rejected request
+          const request = await requestsCollection.findOne(query);
+          const assetId = request?.asset?._id;
+    
+          if (!assetId) {
+            return res.status(400).send({ success: false, message: "Asset not found." });
+          }
+    
+          // Update the quantity in assetCollection
+          const updateAssetDoc = {
+            $inc: {
+              quantity: 1,  // Increment quantity by 1 in the asset collection
+            },
+          };
+          const assetResult = await assetCollection.updateOne({ _id: new ObjectId(assetId) }, updateAssetDoc);
+    
+          if (assetResult.modifiedCount === 1) {
+            res.send({ success: true, message: "Request rejected and asset quantity updated successfully." });
+          } else {
+            res.status(400).send({ success: false, message: "Failed to update asset quantity." });
+          }
+        } else {
+          res.status(400).send({ success: false, message: "Failed to reject request." });
+        }
+      } catch (error) {
+        console.error("Error rejecting request:", error);
+        res.status(500).send({ success: false, message: "Internal server error." });
+      }
+    });
+    
+    
 
 
     app.get("/asset-details/:id", async (req, res) => {
@@ -237,10 +306,10 @@ async function run() {
     });
 
     app.post("/assets/request", async (req, res) => {
-      const requestInfo = req.body;
-
+      const assetInfo = req.body;
+      console.log("assetinfo",assetInfo)
       try {
-        const result = await requestsCollection.insertOne(requestInfo);
+        const result = await requestsCollection.insertOne(assetInfo);
         res.send({
           success: true,
           message: "Request added successfully",
@@ -256,31 +325,43 @@ async function run() {
 
     app.patch("/assets-update/:id", async (req, res) => {
       const assetId = req.params.id;
-
+      const { quantity, availability, requests } = req.body; // Expect requests in the payload
+    
       try {
-        // Find the asset and update its requests and quantity
+        // Find the asset by ID
+        const asset = await assetCollection.findOne({ _id: new ObjectId(assetId) });
+    
+        if (!asset) {
+          return res.status(404).send({ success: false, message: "Asset not found" });
+        }
+    
+        // Update the asset
         const result = await assetCollection.updateOne(
-          { _id: new ObjectId(assetId) }, // Filter by asset ID
+          { _id: new ObjectId(assetId) },
           {
+            $set: {
+              quantity,
+              availability,
+            },
             $inc: {
-              requests: 1, // Increment requests by 1
-              quantity: -1, // Decrement quantity by 1
+              requests: 1, // Increment the requests count by 1
             },
           }
         );
-
+    
         if (result.modifiedCount > 0) {
           res.send({ success: true, message: "Asset updated successfully" });
         } else {
-          res.status(404).send({ success: false, message: "Asset not found" });
+          res.status(404).send({ success: false, message: "Asset not updated" });
         }
       } catch (error) {
         console.error("Error updating asset:", error);
-        res
-          .status(500)
-          .send({ success: false, message: "Failed to update asset", error });
+        res.status(500).send({ success: false, message: "Failed to update asset", error });
       }
     });
+    
+    
+
 
     app.get("/employee/requests/:email", async (req, res) => {
       const email = req.params.email;
