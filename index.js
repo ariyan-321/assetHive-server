@@ -185,6 +185,9 @@ async function run() {
     
           // Update the quantity in assetCollection
           const updateAssetDoc = {
+            $set: {
+              availability: "available",
+            },
             $inc: {
               quantity: 1,  // Increment quantity by 1 in the asset collection
             },
@@ -235,7 +238,7 @@ async function run() {
 
     app.put("/update-asset/:id", async (req, res) => {
       const id = req.params.id;
-      const { name, type, quantity, image } = req.body;
+      const { name, type, quantity, image ,availability} = req.body;
     
       // Validation (check if required fields are provided)
       if (!name || !type || !quantity || !image) {
@@ -255,6 +258,7 @@ async function run() {
           type: type,
           quantity: quantity,
           image: image, // Image URL or file path
+          availability:"available"
         },
       };
     
