@@ -125,29 +125,92 @@ async function run() {
     });
 
     app.get("/requests/all/:email", async (req, res) => {
-      const email=req.params.email;
-      const query={"asset.HrEmail":email}
-      const result = await requestsCollection.find(query).toArray();
+      const email = req.params.email;
+      const query = { "asset.HrEmail": email };
+      const result = await requestsCollection.find(query).limit(5).toArray();
       res.send(result);
     });
 
     app.get("/requests/pending/:email", async (req, res) => {
-      const email=req.params.email;
-      const query={"asset.HrEmail":email,status:"pending"}
-      const result = await requestsCollection.find(query).toArray();
+      const email = req.params.email;
+      const query = { "asset.HrEmail": email, status: "pending" };
+      const result = await requestsCollection.find(query).limit(5).toArray();
       res.send(result);
     });
 
 
+    app.get("/asset-details/:id", async (req, res) => {
+      const id = req.params.id;
 
+      // Validate ID
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid asset ID" });
+      }
 
+      try {
+        const query = { _id: new ObjectId(id) };
+        const result = await assetCollection.findOne(query);
+
+        if (!result) {
+          return res.status(404).json({ message: "Asset not found" });
+        }
+
+        res.status(200).json(result);
+      } catch (error) {
+        console.error("Error fetching asset details:", error);
+        res
+          .status(500)
+          .json({ message: "An error occurred while fetching asset details" });
+      }
+    });
+
+    app.put("/update-asset/:id", async (req, res) => {
+      const id = req.params.id;
+      const { name, type, quantity, image } = req.body;
+    
+      // Validation (check if required fields are provided)
+      if (!name || !type || !quantity || !image) {
+        return res.status(400).send({ message: "All fields are required." });
+      }
+    
+      // Ensure that quantity is greater than zero
+      if (quantity <= 0) {
+        return res.status(400).send({ message: "Quantity must be greater than zero." });
+      }
+    
+      // Create update query
+      const query = { _id: new ObjectId(id) };
+      const updateData = {
+        $set: {
+          name: name,
+          type: type,
+          quantity: quantity,
+          image: image, // Image URL or file path
+        },
+      };
+    
+      try {
+        // Find and update the asset
+        const result = await assetCollection.updateOne(query, updateData);
+    
+        if (result.modifiedCount > 0) {
+          return res.status(200).send({ message: "Asset updated successfully." });
+        } else {
+          return res.status(404).send({ message: "Asset not found." });
+        }
+      } catch (error) {
+        console.error("Error updating asset:", error);
+        return res.status(500).send({ message: "Failed to update asset. Please try again." });
+      }
+    });
+    
 
     app.get("/users/:email", async (req, res) => {
       const query = { email: req.params.email };
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
-   
+
     app.post("/add-employee", async (req, res) => {
       const employee = req.body;
       const result = await employeeCollection.insertMany(employee);
@@ -167,9 +230,9 @@ async function run() {
     });
 
     app.get("/team/:email", async (req, res) => {
-      const email=req.params.email;
-      const query={companyEmail:email};
-      const result=await employeeCollection.find(query).toArray();
+      const email = req.params.email;
+      const query = { companyEmail: email };
+      const result = await employeeCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -228,23 +291,32 @@ async function run() {
 
     app.get("/employee/monthly/requests/:email", async (req, res) => {
       const email = req.params.email;
-    
+
       // Get the start and end of the current month
-      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-      const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
-    
+      const startOfMonth = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        1
+      );
+      const endOfMonth = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth() + 1,
+        0
+      );
+
       // Build the query
       const query = {
         email: email,
         requestDate: {
           $gte: startOfMonth.getTime(), // Greater than or equal to the start of the month
-          $lte: endOfMonth.getTime(),  // Less than or equal to the end of the month
+          $lte: endOfMonth.getTime(), // Less than or equal to the end of the month
         },
       };
-    
+
       try {
         const result = await requestsCollection
           .find(query)
+          .sort({ requestDate: -1 }) // Sort by requestDate in descending order (most recent first)
           .limit(4) // Limit the response to a maximum of 4 documents
           .toArray();
         res.send(result);
@@ -253,19 +325,13 @@ async function run() {
         res.status(500).send({ error: "Failed to fetch monthly requests" });
       }
     });
-    
-    
 
     app.get("/employee/requests/pending/:email", async (req, res) => {
       const email = req.params.email;
-      const query = { email: email ,status:"pending"};
-      const result = await requestsCollection.find(query).toArray();
+      const query = { email: email, status: "pending" };
+      const result = await requestsCollection.find(query).limit(5).toArray();
       res.send(result);
     });
-
-
-   
-
 
     app.get("/assets/:email", async (req, res) => {
       const query = { HrEmail: req.params.email };
@@ -274,26 +340,78 @@ async function run() {
     });
 
     app.get("/asset-list/:email", async (req, res) => {
-      const query = { HrEmail: req.params.email };
-      const result = await assetCollection.find(query).toArray();
-      res.send(result);
+      const { email } = req.params;
+      const { searchTerm, filterStatus, filterType, sortOrder } = req.query;
+
+      // Building the query for filtering by HR email
+      const query = { HrEmail: email };
+
+      // Adding search functionality
+      if (searchTerm) {
+        query.name = { $regex: searchTerm, $options: "i" }; // Case-insensitive search
+      }
+
+      // Adding filter functionality for stock status (available/out-of-stock)
+      if (filterStatus === "available") {
+        query.quantity = { $gt: 0 }; // Only show assets with quantity > 0
+      } else if (filterStatus === "out-of-stock") {
+        query.quantity = { $eq: 0 }; // Only show assets with quantity = 0
+      }
+
+      // Adding filter functionality for asset type (returnable/non-returnable)
+      if (filterType && filterType !== "all") {
+        query.type = filterType; // Filter by asset type
+      }
+
+      // Sorting by quantity (ascending or descending)
+      let sortQuery = {};
+      if (sortOrder === "asc") {
+        sortQuery.quantity = 1; // Ascending
+      } else if (sortOrder === "desc") {
+        sortQuery.quantity = -1; // Descending
+      }
+
+      try {
+        const result = await assetCollection
+          .find(query)
+          .sort(sortQuery) // Sort based on quantity
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching assets:", error);
+        res.status(500).send("Error fetching assets");
+      }
     });
 
     app.get("/asset/most/:email", async (req, res) => {
-      const query = { HrEmail: req.params.email ,"requests": { $gt: 2 }};
-      const result = await assetCollection.find(query).toArray();
+      const query = { HrEmail: req.params.email, requests: { $gt: 2 } };
+      const result = await assetCollection.find(query).limit(4).toArray();
       res.send(result);
     });
 
     app.get("/asset/limited/:email", async (req, res) => {
-      const query = { HrEmail: req.params.email ,"quantity": { $lt: 10 }};
-      const result = await assetCollection.find(query).toArray();
+      const query = { HrEmail: req.params.email, quantity: { $lt: 10 } };
+      const result = await assetCollection.find(query).limit(5).toArray();
       res.send(result);
     });
 
     app.get("/employees/list/:email", async (req, res) => {
       const query = { companyEmail: req.params.email };
       const result = await employeeCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.delete("/employees/remove/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await employeeCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.delete("/asset/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await assetCollection.deleteOne(query);
       res.send(result);
     });
   } catch (err) {
