@@ -419,10 +419,35 @@ async function run() {
     });
 
     app.get("/assets/:email", async (req, res) => {
-      const query = { HrEmail: req.params.email };
-      const result = await assetCollection.find(query).toArray();
-      res.send(result);
+      try {
+        const { email } = req.params;
+        const { search, availability, type } = req.query;
+    
+        const query = { HrEmail: email };
+    
+        // Apply search filter
+        if (search) {
+          query.name = { $regex: search, $options: "i" }; // Case-insensitive search
+        }
+    
+        // Apply availability filter
+        if (availability) {
+          query.availability = availability; // 'available' or 'out-of-stock'
+        }
+    
+        // Apply type filter
+        if (type) {
+          query.type = type; // 'returnable' or 'non-returnable'
+        }
+    
+        const result = await assetCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching assets:", error);
+        res.status(500).send({ error: "Failed to fetch assets." });
+      }
     });
+    
 
     app.get("/asset-list/:email", async (req, res) => {
       const { email } = req.params;
