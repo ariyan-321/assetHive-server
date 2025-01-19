@@ -208,8 +208,145 @@ async function run() {
       }
     });
     
+    app.patch("/requests/approve/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
     
+      try {
+        // Update the request status to "approved"
+        const updateRequestDoc = {
+          $set: {
+            status: "approved",
+            approvalDate: Date.now(),
+          },
+        };
+    
+        const requestResult = await requestsCollection.updateOne(query, updateRequestDoc);
+    
+        if (requestResult.modifiedCount === 1) {
+          // Fetch the updated request document
+          const updatedRequest = await requestsCollection.findOne(query);
+    
+          // Respond with success and updated request details
+          res.send({
+            success: true,
+            message: "Request approved successfully.",
+            data: updatedRequest,
+          });
+        } else {
+          // Respond with failure if no document was modified
+          res.status(400).send({
+            success: false,
+            message: "Failed to approve request. It may not exist or is already approved.",
+          });
+        }
+      } catch (error) {
+        console.error("Error approving request:", error);
+        res.status(500).send({ success: false, message: "Internal server error." });
+      }
+    });
 
+    app.patch("/requests/cancel/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+    
+      try {
+        // Update both the request status to "rejected" and increment the quantity of the asset inside the request document
+        const updateRequestDoc = {
+          $set: {
+            status: "cancelled",
+          },
+          $inc: {
+            "asset.quantity": 1,  // Increment quantity inside the asset field of the request document
+          },
+        };
+        
+        const requestResult = await requestsCollection.updateOne(query, updateRequestDoc);
+    
+        if (requestResult.modifiedCount === 1) {
+          // Get the asset ID from the rejected request
+          const request = await requestsCollection.findOne(query);
+          const assetId = request?.asset?._id;
+    
+          if (!assetId) {
+            return res.status(400).send({ success: false, message: "Asset not found." });
+          }
+    
+          // Update the quantity in assetCollection
+          const updateAssetDoc = {
+            $set: {
+              availability: "available",
+            },
+            $inc: {
+              quantity: 1,  // Increment quantity by 1 in the asset collection
+            },
+          };
+          const assetResult = await assetCollection.updateOne({ _id: new ObjectId(assetId) }, updateAssetDoc);
+    
+          if (assetResult.modifiedCount === 1) {
+            res.send({ success: true, message: "Request rejected and asset quantity updated successfully." });
+          } else {
+            res.status(400).send({ success: false, message: "Failed to update asset quantity." });
+          }
+        } else {
+          res.status(400).send({ success: false, message: "Failed to reject request." });
+        }
+      } catch (error) {
+        console.error("Error rejecting request:", error);
+        res.status(500).send({ success: false, message: "Internal server error." });
+      }
+    });
+    
+    app.patch("/requests/return/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+    
+      try {
+        // Update both the request status to "rejected" and increment the quantity of the asset inside the request document
+        const updateRequestDoc = {
+          $set: {
+            status: "returned",
+          },
+          $inc: {
+            "asset.quantity": 1,  // Increment quantity inside the asset field of the request document
+          },
+        };
+        
+        const requestResult = await requestsCollection.updateOne(query, updateRequestDoc);
+    
+        if (requestResult.modifiedCount === 1) {
+          // Get the asset ID from the rejected request
+          const request = await requestsCollection.findOne(query);
+          const assetId = request?.asset?._id;
+    
+          if (!assetId) {
+            return res.status(400).send({ success: false, message: "Asset not found." });
+          }
+    
+          // Update the quantity in assetCollection
+          const updateAssetDoc = {
+            $set: {
+              availability: "available",
+            },
+            $inc: {
+              quantity: 1,  // Increment quantity by 1 in the asset collection
+            },
+          };
+          const assetResult = await assetCollection.updateOne({ _id: new ObjectId(assetId) }, updateAssetDoc);
+    
+          if (assetResult.modifiedCount === 1) {
+            res.send({ success: true, message: "Request rejected and asset quantity updated successfully." });
+          } else {
+            res.status(400).send({ success: false, message: "Failed to update asset quantity." });
+          }
+        } else {
+          res.status(400).send({ success: false, message: "Failed to reject request." });
+        }
+      } catch (error) {
+        console.error("Error rejecting request:", error);
+        res.status(500).send({ success: false, message: "Internal server error." });
+      }
+    });
 
     app.get("/asset-details/:id", async (req, res) => {
       const id = req.params.id;
