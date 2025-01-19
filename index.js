@@ -124,7 +124,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/requests/all/:email", async (req, res) => {
+    app.get("/requests/all/:email",verifyToken,verifyHrManager, async (req, res) => {
       try {
         const email = req.params.email;
         const search = req.query.search || ''; // Get the search term from query parameters
@@ -147,7 +147,7 @@ async function run() {
     });
     
 
-    app.get("/requests-pending/:email", async (req, res) => {
+    app.get("/requests-pending/:email",verifyToken,verifyHrManager, async (req, res) => {
       const email = req.params.email;
       const query = { "asset.HrEmail": email, status: "pending" };
       const result = await requestsCollection.find(query).limit(5).toArray();
@@ -157,7 +157,7 @@ async function run() {
     
     
 
-    app.patch("/requests/reject/:id", async (req, res) => {
+    app.patch("/requests/reject/:id",verifyToken,verifyHrManager, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
     
@@ -208,7 +208,7 @@ async function run() {
       }
     });
     
-    app.patch("/requests/approve/:id", async (req, res) => {
+    app.patch("/requests/approve/:id",verifyToken,verifyHrManager, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
     
@@ -373,7 +373,7 @@ async function run() {
       }
     });
 
-    app.put("/update-asset/:id", async (req, res) => {
+    app.put("/update-asset/:id",verifyToken,verifyHrManager, async (req, res) => {
       const id = req.params.id;
       const { name, type, quantity, image ,availability} = req.body;
     
@@ -421,7 +421,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/add-employee", async (req, res) => {
+    app.post("/add-employee", verifyToken,verifyHrManager,async (req, res) => {
       const employee = req.body;
       const result = await employeeCollection.insertMany(employee);
       res.send(result);
@@ -433,7 +433,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/assets", async (req, res) => {
+    app.post("/assets", verifyToken,verifyHrManager,async (req, res) => {
       const { asset } = req.body;
       const result = await assetCollection.insertOne(asset);
       res.send(result);
@@ -586,7 +586,7 @@ async function run() {
     });
     
 
-    app.get("/asset-list/:email", async (req, res) => {
+    app.get("/asset-list/:email", verifyToken,verifyHrManager,async (req, res) => {
       const { email } = req.params;
       const { searchTerm, filterStatus, filterType, sortOrder } = req.query;
 
@@ -630,32 +630,32 @@ async function run() {
       }
     });
 
-    app.get("/asset/most/:email", async (req, res) => {
+    app.get("/asset/most/:email",verifyToken,verifyHrManager, async (req, res) => {
       const query = { HrEmail: req.params.email, requests: { $gt: 2 } };
       const result = await assetCollection.find(query).limit(4).toArray();
       res.send(result);
     });
 
-    app.get("/asset/limited/:email", async (req, res) => {
+    app.get("/asset/limited/:email",verifyToken,verifyHrManager, async (req, res) => {
       const query = { HrEmail: req.params.email, quantity: { $lt: 10 } };
       const result = await assetCollection.find(query).limit(5).toArray();
       res.send(result);
     });
 
-    app.get("/employees/list/:email", async (req, res) => {
+    app.get("/employees/list/:email",verifyToken,verifyHrManager, async (req, res) => {
       const query = { companyEmail: req.params.email };
       const result = await employeeCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.delete("/employees/remove/:id", async (req, res) => {
+    app.delete("/employees/remove/:id",verifyToken,verifyHrManager, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await employeeCollection.deleteOne(query);
       res.send(result);
     });
 
-    app.delete("/asset/:id", async (req, res) => {
+    app.delete("/asset/:id",verifyToken,verifyHrManager, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await assetCollection.deleteOne(query);
