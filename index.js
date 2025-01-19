@@ -246,7 +246,7 @@ async function run() {
       }
     });
 
-    app.patch("/requests/cancel/:id", async (req, res) => {
+    app.patch("/requests/cancel/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
     
@@ -297,7 +297,7 @@ async function run() {
       }
     });
     
-    app.patch("/requests/return/:id", async (req, res) => {
+    app.patch("/requests/return/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
     
@@ -439,14 +439,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/team/:email", async (req, res) => {
+    app.get("/team/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { companyEmail: email };
       const result = await employeeCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.post("/assets/request", async (req, res) => {
+    app.post("/assets/request",verifyToken, async (req, res) => {
       const assetInfo = req.body;
       console.log("assetinfo",assetInfo)
       try {
@@ -464,7 +464,7 @@ async function run() {
       }
     });
 
-    app.patch("/assets-update/:id", async (req, res) => {
+    app.patch("/assets-update/:id", verifyToken,async (req, res) => {
       const assetId = req.params.id;
       const { quantity, availability, requests } = req.body; // Expect requests in the payload
     
@@ -504,14 +504,14 @@ async function run() {
     
 
 
-    app.get("/employee/requests/:email", async (req, res) => {
+    app.get("/employee/requests/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const result = await requestsCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.get("/employee/monthly/requests/:email", async (req, res) => {
+    app.get("/employee/monthly/requests/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
 
       // Get the start and end of the current month
@@ -548,14 +548,14 @@ async function run() {
       }
     });
 
-    app.get("/employee/requests/pending/:email", async (req, res) => {
+    app.get("/employee/requests/pending/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email, status: "pending" };
       const result = await requestsCollection.find(query).limit(5).toArray();
       res.send(result);
     });
 
-    app.get("/assets/:email", async (req, res) => {
+    app.get("/assets/:email",verifyToken, async (req, res) => {
       try {
         const { email } = req.params;
         const { search, availability, type } = req.query;
