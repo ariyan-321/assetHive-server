@@ -73,7 +73,6 @@ async function run() {
 
     app.post("/users", async (req, res) => {
       const { hrInfo } = req.body;
-      console.log("Received data:", hrInfo);
       const query = { email: hrInfo?.email };
       const existingUser = await usersCollection.findOne(query);
       if (existingUser) {
@@ -479,7 +478,6 @@ async function run() {
 
     app.post("/assets/request",verifyToken, async (req, res) => {
       const assetInfo = req.body;
-      console.log("assetinfo",assetInfo)
       try {
         const result = await requestsCollection.insertOne(assetInfo);
         res.send({
