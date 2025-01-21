@@ -3,8 +3,10 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
-
 dotenv.config();
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
 
 const port = process.env.port || 5000;
 const app = express();
@@ -421,6 +423,35 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/user-payment-success/:id", async (req, res) => {
+      const id = req.params.id;
+      const { selectedPackage } = req.body;
+    
+      try {
+        // Fetch the user data
+        const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+    
+        // Check if the user already has a selected package
+        let newPackage = user.selectedPackage || 0; // Default to 0 if no package exists
+        newPackage += selectedPackage; // Add the new package to the existing one
+    
+        // Update user data with the new package and set 'hasPaid' to true
+        const updatedUser = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: { selectedPackage: newPackage, hasPaid: true }  // Here 'hasPaid' is set to true
+          }
+        );
+    
+        // Respond with the updated user data
+        res.status(200).json({ message: "Payment successful", updatedUser });
+      } catch (error) {
+        console.error("Error updating user data", error);
+        res.status(500).json({ message: "Error updating user data", error });
+      }
+    });
+    
+
     app.post("/add-employee", verifyToken,verifyHrManager,async (req, res) => {
       const employee = req.body;
       const result = await employeeCollection.insertMany(employee);
@@ -661,6 +692,23 @@ async function run() {
       const result = await assetCollection.deleteOne(query);
       res.send(result);
     });
+
+   app.post("/create-payment-intent",async(req,res)=>{
+    const {price}=req.body;
+    const amount=parseInt(price*100);
+
+    const paymentIntent=await stripe.paymentIntents.create({
+      amount:amount,
+      currency:"usd",
+      payment_method_types:["card"]
+    })
+    res.send({
+      clientSecret:paymentIntent.client_secret
+    })
+   })
+
+
+
   } catch (err) {
     console.error("Error connecting to MongoDB:", err.message);
   }
