@@ -533,12 +533,6 @@ async function run() {
     
 
 
-    // app.get("/employee/requests/:email",verifyToken, async (req, res) => {
-    //   const email = req.params.email;
-    //   const query = { email: email };
-    //   const result = await requestsCollection.find(query).toArray();
-    //   res.send(result);
-    // });
 
     app.get("/employee/requests/:email", verifyToken, async (req, res) => {
       const { email } = req.params;
