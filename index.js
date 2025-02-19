@@ -109,7 +109,7 @@ async function run() {
         console.error(error);
         res
           .status(500)
-          .json({ message: "An error occurred while updating user data" });
+          .json({ message: "An Error Occurred While Updating User Data" });
       }
     });
 
