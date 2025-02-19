@@ -14,7 +14,7 @@ app.use(cors());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@ariyan.mefyr.mongodb.net/?retryWrites=true&w=majority&appName=Ariyan`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -89,14 +89,13 @@ async function run() {
       const { company, companyImage, companyEmail } = req.body;
 
       try {
-        // Update the user's fields in the users collection
         const updatedUser = await usersCollection.updateOne(
-          { _id: new ObjectId(id) }, // Match the user by their ID
+          { _id: new ObjectId(id) }, 
           {
             $set: {
-              company, // Add or update company name
-              companyImage, // Add or update company image
-              companyEmail, // Add or update company email
+              company,
+              companyImage, 
+              companyEmail, 
             },
           }
         );
@@ -382,7 +381,6 @@ async function run() {
         );
 
         if (requestResult.modifiedCount === 1) {
-          // Get the asset ID from the rejected request
           const request = await requestsCollection.findOne(query);
           const assetId = request?.asset?._id;
 
@@ -392,13 +390,12 @@ async function run() {
               .send({ success: false, message: "Asset not found." });
           }
 
-          // Update the quantity in assetCollection
           const updateAssetDoc = {
             $set: {
               availability: "available",
             },
             $inc: {
-              quantity: 1, // Increment quantity by 1 in the asset collection
+              quantity: 1, 
             },
           };
           const assetResult = await assetCollection.updateOne(
