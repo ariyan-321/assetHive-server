@@ -14,7 +14,6 @@ app.use(cors());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@ariyan.mefyr.mongodb.net/?retryWrites=true&w=majority&appName=Ariyan`;
 
-
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -90,12 +89,12 @@ async function run() {
 
       try {
         const updatedUser = await usersCollection.updateOne(
-          { _id: new ObjectId(id) }, 
+          { _id: new ObjectId(id) },
           {
             $set: {
               company,
-              companyImage, 
-              companyEmail, 
+              companyImage,
+              companyEmail,
             },
           }
         );
@@ -130,13 +129,13 @@ async function run() {
       async (req, res) => {
         try {
           const email = req.params.email;
-          const search = req.query.search || ""; 
+          const search = req.query.search || "";
 
           const query = {
             "asset.HrEmail": email,
             $or: [
-              { email: { $regex: search, $options: "i" } }, 
-              { "asset.name": { $regex: search, $options: "i" } }, 
+              { email: { $regex: search, $options: "i" } },
+              { "asset.name": { $regex: search, $options: "i" } },
             ],
           };
 
@@ -176,7 +175,7 @@ async function run() {
               status: "rejected",
             },
             $inc: {
-              "asset.quantity": 1, 
+              "asset.quantity": 1,
             },
           };
 
@@ -201,7 +200,7 @@ async function run() {
                 availability: "available",
               },
               $inc: {
-                quantity: 1, 
+                quantity: 1,
               },
             };
             const assetResult = await assetCollection.updateOne(
@@ -216,12 +215,10 @@ async function run() {
                   "Request rejected and asset quantity updated successfully.",
               });
             } else {
-              res
-                .status(400)
-                .send({
-                  success: false,
-                  message: "Failed to update asset quantity.",
-                });
+              res.status(400).send({
+                success: false,
+                message: "Failed to update asset quantity.",
+              });
             }
           } else {
             res
@@ -246,7 +243,6 @@ async function run() {
         const query = { _id: new ObjectId(id) };
 
         try {
-          // Update the request status to "approved"
           const updateRequestDoc = {
             $set: {
               status: "approved",
@@ -260,17 +256,14 @@ async function run() {
           );
 
           if (requestResult.modifiedCount === 1) {
-            // Fetch the updated request document
             const updatedRequest = await requestsCollection.findOne(query);
 
-            // Respond with success and updated request details
             res.send({
               success: true,
               message: "Request approved successfully.",
               data: updatedRequest,
             });
           } else {
-            // Respond with failure if no document was modified
             res.status(400).send({
               success: false,
               message:
@@ -291,13 +284,12 @@ async function run() {
       const query = { _id: new ObjectId(id) };
 
       try {
-        // Update both the request status to "rejected" and increment the quantity of the asset inside the request document
         const updateRequestDoc = {
           $set: {
             status: "cancelled",
           },
           $inc: {
-            "asset.quantity": 1, // Increment quantity inside the asset field of the request document
+            "asset.quantity": 1,
           },
         };
 
@@ -307,7 +299,6 @@ async function run() {
         );
 
         if (requestResult.modifiedCount === 1) {
-          // Get the asset ID from the rejected request
           const request = await requestsCollection.findOne(query);
           const assetId = request?.asset?._id;
 
@@ -317,13 +308,12 @@ async function run() {
               .send({ success: false, message: "Asset not found." });
           }
 
-          // Update the quantity in assetCollection
           const updateAssetDoc = {
             $set: {
               availability: "available",
             },
             $inc: {
-              quantity: 1, // Increment quantity by 1 in the asset collection
+              quantity: 1,
             },
           };
           const assetResult = await assetCollection.updateOne(
@@ -338,12 +328,10 @@ async function run() {
                 "Request rejected and asset quantity updated successfully.",
             });
           } else {
-            res
-              .status(400)
-              .send({
-                success: false,
-                message: "Failed to update asset quantity.",
-              });
+            res.status(400).send({
+              success: false,
+              message: "Failed to update asset quantity.",
+            });
           }
         } else {
           res
@@ -393,7 +381,7 @@ async function run() {
               availability: "available",
             },
             $inc: {
-              quantity: 1, 
+              quantity: 1,
             },
           };
           const assetResult = await assetCollection.updateOne(
@@ -408,12 +396,10 @@ async function run() {
                 "Request rejected and asset quantity updated successfully.",
             });
           } else {
-            res
-              .status(400)
-              .send({
-                success: false,
-                message: "Failed to update asset quantity.",
-              });
+            res.status(400).send({
+              success: false,
+              message: "Failed to update asset quantity.",
+            });
           }
         } else {
           res
