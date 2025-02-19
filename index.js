@@ -351,7 +351,6 @@ async function run() {
       const query = { _id: new ObjectId(id) };
 
       try {
-        // Update both the request status to "rejected" and increment the quantity of the asset inside the request document
         const updateRequestDoc = {
           $set: {
             status: "returned",
