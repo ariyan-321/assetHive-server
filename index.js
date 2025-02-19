@@ -161,6 +161,7 @@ async function run() {
       }
     );
 
+    //patch requests
     app.patch(
       "/requests/reject/:id",
       verifyToken,
@@ -170,13 +171,12 @@ async function run() {
         const query = { _id: new ObjectId(id) };
 
         try {
-          // Update both the request status to "rejected" and increment the quantity of the asset inside the request document
           const updateRequestDoc = {
             $set: {
               status: "rejected",
             },
             $inc: {
-              "asset.quantity": 1, // Increment quantity inside the asset field of the request document
+              "asset.quantity": 1, 
             },
           };
 
@@ -196,13 +196,12 @@ async function run() {
                 .send({ success: false, message: "Asset not found." });
             }
 
-            // Update the quantity in assetCollection
             const updateAssetDoc = {
               $set: {
                 availability: "available",
               },
               $inc: {
-                quantity: 1, // Increment quantity by 1 in the asset collection
+                quantity: 1, 
               },
             };
             const assetResult = await assetCollection.updateOne(
