@@ -130,14 +130,13 @@ async function run() {
       async (req, res) => {
         try {
           const email = req.params.email;
-          const search = req.query.search || ""; // Get the search term from query parameters
+          const search = req.query.search || ""; 
 
-          // Query to match the HR email and optionally filter by requester email or name
           const query = {
             "asset.HrEmail": email,
             $or: [
-              { email: { $regex: search, $options: "i" } }, // Match requester email
-              { "asset.name": { $regex: search, $options: "i" } }, // Match asset name
+              { email: { $regex: search, $options: "i" } }, 
+              { "asset.name": { $regex: search, $options: "i" } }, 
             ],
           };
 
